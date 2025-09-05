@@ -1,0 +1,14 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database=developer_evaluation;User Id=postgres;Password=YOUR_POSTGRES_PASSWORD;Port=5432"
+  },
+  "Jwt": {
+    "SecretKey": "GENERATE_YOUR_OWN_JWT_SECRET_KEY_AT_LEAST_32_BYTES_LONG"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}
