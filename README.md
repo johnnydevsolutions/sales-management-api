@@ -80,25 +80,58 @@ cd sales-management-api
 
 ### 2️⃣ Instale as Dependências
 ```bash
-dotnet restore
+dotnet restore Ambev.DeveloperEvaluation.sln
 ```
 
-### 3️⃣ Configure o Banco (Docker - Recomendado)
-```bash
-docker run --name postgres-sales `
-  -e POSTGRES_DB=sales_db `
-  -e POSTGRES_USER=sales_user `
-  -e POSTGRES_PASSWORD=sales_pass `
-  -p 5432:5432 `
-  -d postgres:13
+### 3️⃣ Configure o Banco de Dados
+
+**Opção A: PostgreSQL Local (Recomendado)**
+
+1. Certifique-se que o PostgreSQL está rodando localmente
+2. Crie o banco e usuário:
+
+```sql
+-- Conectar ao PostgreSQL e executar:
+CREATE DATABASE developer_evaluation;
+-- Usuário postgres já existe, apenas certifique-se da senha
 ```
+
+3. Atualize a senha no arquivo de configuração:
+   - Edite `src/Ambev.DeveloperEvaluation.WebApi/appsettings.Development.json`
+   - Substitua `YOUR_PASSWORD_HERE` pela senha do seu PostgreSQL local
+
+> Nota: se você já tiver o PostgreSQL local rodando na porta padrão (5432), deixe como está. A opção Docker (B) usa a porta 5433 por padrão para evitar conflito com essa instalação local.
+  
+**Opção B: Docker (Alternativa)**
+
+```bash
+docker run --name postgres-sales -e POSTGRES_DB=sales_db -e POSTGRES_USER=sales_user -e POSTGRES_PASSWORD=sales_pass -p 5433:5432 -d postgres:13
+```
+
+> **Nota:** Usando porta 5433 para evitar conflito com PostgreSQL local.
 
 ### 4️⃣ Execute as Migrações
 ```bash
-dotnet ef database update `
-  --project src/Ambev.DeveloperEvaluation.ORM `
-  --startup-project src/Ambev.DeveloperEvaluation.WebApi
+# Comando padrão (usando appsettings)
+dotnet ef database update --project src/Ambev.DeveloperEvaluation.ORM --startup-project src/Ambev.DeveloperEvaluation.WebApi
 ```
+
+> Se ocorrer erro de autenticação (28P01) e você quiser isolar a connection string sem editar arquivos de configuração, rode:
+```bash
+dotnet ef database update --connection "Host=localhost;Port=5432;Database=developer_evaluation;Username=postgres;Password=YOUR_PASSWORD" --project src/Ambev.DeveloperEvaluation.ORM --startup-project src/Ambev.DeveloperEvaluation.WebApi
+```
+
+Verifique também a conexão interativa com o cliente psql (substitua o caminho se necessário):
+
+```bash
+# No PowerShell
+& 'D:\Postgres\bin\psql.exe' -h localhost -p 5432 -U postgres -d developer_evaluation
+
+# Dentro do psql, verificar arquivo de configuração ativo
+SHOW hba_file;
+```
+
+Se o `pg_hba.conf` não permitir autenticação por senha em 127.0.0.1, ajuste para usar `md5` e reinicie o serviço do PostgreSQL.
 
 ### 5️⃣ Execute a Aplicação
 ```bash
@@ -114,12 +147,16 @@ dotnet run
 
 ### Configurar Banco de Dados
 
-Crie o arquivo: `src/Ambev.DeveloperEvaluation.WebApi/appsettings.Development.json`
+O projeto utiliza PostgreSQL. Configure conforme sua preferência:
+
+**PostgreSQL Local:**
+
+Edite: `src/Ambev.DeveloperEvaluation.WebApi/appsettings.Development.json`
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=sales_db;Username=sales_user;Password=sales_pass"
+    "DefaultConnection": "Server=localhost;Database=developer_evaluation;User Id=postgres;Password=SUA_SENHA_AQUI;Port=5432"
   },
   "Logging": {
     "LogLevel": {
@@ -130,16 +167,32 @@ Crie o arquivo: `src/Ambev.DeveloperEvaluation.WebApi/appsettings.Development.js
 }
 ```
 
-### Alternativa: PostgreSQL Local
+**Docker (Alternativa):**
 
-Se preferir instalar PostgreSQL localmente:
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5433;Database=sales_db;Username=sales_user;Password=sales_pass"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information", 
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}
+```
+
+### Alternativa: PostgreSQL com Docker
+
+Se preferir usar Docker ao invés do PostgreSQL local:
 
 ```sql
--- Conectar ao PostgreSQL e executar:
-CREATE DATABASE sales_db;
-CREATE USER sales_user WITH PASSWORD 'sales_pass';
-GRANT ALL PRIVILEGES ON DATABASE sales_db TO sales_user;
+-- Use porta 5433 para evitar conflito com PostgreSQL local
+docker run --name postgres-sales -e POSTGRES_DB=sales_db -e POSTGRES_USER=sales_user -e POSTGRES_PASSWORD=sales_pass -p 5433:5432 -d postgres:13
 ```
+
+E ajuste a connection string para usar a porta 5433.
 
 ## 🏃‍♂️ Como Executar
 
